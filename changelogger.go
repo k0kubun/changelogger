@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/howeyc/fsnotify"
 	"io/ioutil"
 	"log"
@@ -53,9 +54,9 @@ func startLogging(path string) {
 		for {
 			select {
 			case event := <-watcher.Event:
-				modifiedPath := event.Name
-				if event.IsModify() && isContentChanged(modifiedPath) {
-					log.Println("Changed:", modifiedPath)
+				if event.IsModify() {
+					modifiedPath := event.Name
+					checkContentChanged(modifiedPath)
 				}
 			case err := <-watcher.Error:
 				log.Println("Error:", err)
@@ -64,12 +65,16 @@ func startLogging(path string) {
 	}()
 }
 
-func isContentChanged(path string) bool {
+func checkContentChanged(path string) bool {
 	buffer, _ := ioutil.ReadFile(path)
 	newContent := string(buffer)
 	oldContent := contentByPath[path]
 
 	if oldContent != newContent {
+		log.Println("Changed:", path)
+		showDiff(oldContent, newContent)
+		fmt.Println("")
+
 		contentByPath[path] = newContent
 		return true
 	}
